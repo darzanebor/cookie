@@ -6,7 +6,7 @@ RUN apk add --update --no-cache \
     zlib curl && \
     apk add libxml2-dev libxslt-dev \
     libffi-dev gcc musl-dev libgcc \
-    openssl-dev curl jpeg-dev zlib-dev \
+    openssl-dev jpeg-dev zlib-dev \
     freetype-dev lcms2-dev openjpeg-dev \
     tiff-dev tk-dev tcl-dev && \
     curl https://bootstrap.pypa.io/get-pip.py -o- | python3 - && \
