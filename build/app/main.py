@@ -6,6 +6,7 @@
 from io import BytesIO
 import io
 import os
+import magic
 import base64
 import requests
 import json_log_formatter #Used in gunicorn_logging.conf
@@ -15,8 +16,9 @@ from flask import Flask, request, send_file, render_template, \
 
 application = Flask(__name__, template_folder="templates")
 
-application.config["COOKIE_FIXED_SIZE"] = int(os.environ.get("COOKIE_FIXED_SIZE", "120"))
-application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_SCALE", "30"))
+application.config["COOKIE_FIXED_SIZE"] = int(os.environ.get("COOKIE_FIXED_SIZE", "120")) #Fixed image width to scale to
+application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_SCALE", "30")) #Scale percent
+application.config["COOKIE_DEFAULT_SIZE_LIMIT"] = int(os.environ.get("COOKIE_DEFAULT_SIZE_LIMIT", "31457280")) #Bytes
 
 def image_to_object(image):
     """convert image to Object"""
@@ -29,15 +31,35 @@ def image_to_object(image):
         print("Error in image_to_object()")
         return abort(500)
 
+def get_image_mime(stream):
+    """Get Mime Type from stream"""
+    try:
+        mime = magic.from_buffer(stream.read(2048), mime=True)
+        stream.seek(0)
+        if mime == None:
+            return None
+        return mime
+    except:
+        print("Error in get_image_mime()")
+        return abort(500)
+
+def image_check(image, req):
+    content_length = int(req.headers.get('content-length', None))
+    content_type = req.headers.get('content-type') # header content-type 
+    mime = get_image_mime(image) # mime type from file
+    if mime != content_type:
+        abort(403, 'Content missmatch')
+    if application.config["COOKIE_DEFAULT_SIZE_LIMIT"] < content_length:
+        abort(403, 'Image is too large')
+    return True
+
 def image_process(image_url, scale_percent):
     """image download by url  and process"""
     try:
         image_url = image_url.decode().rstrip("\n")
         req = requests.get(image_url, allow_redirects=True, timeout=5)
         image = BytesIO(req.content)
-        # content_type = req.headers.get('content-type') #image/jpeg
-        # content_length = req.headers.get('content-length', None) #50652 byte limit here
-        if req.status_code == 200:
+        if req.status_code == 200 and image_check(image, req):
             req.raw.decode_content = True
             thumb = make_thumbnail(image, scale_percent)
             return image_to_object(thumb)
@@ -79,8 +101,8 @@ def make_thumbnail(input_image, scale_size):
 
 @application.route("/", methods=["GET", "PUT"])
 def req_handler():
-    """GET/PUT requests handler"""
-    try:
+#    """GET/PUT requests handler"""
+#    try:
         if request.method == "GET":
             url = request.args.get("url")
             if url:
@@ -96,9 +118,9 @@ def req_handler():
                             image_to_object(
                                 make_thumbnail(file, handle_scale(scale_percent))), mimetype="*/*")
         return redirect("/index.html", code=302)
-    except:
-        print("Error in req_handler()")
-        return abort(500)
+#    except:
+#        print("Error in req_handler()")
+#        return abort(500)
 
 
 @application.errorhandler(405)
