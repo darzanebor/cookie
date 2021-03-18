@@ -56,30 +56,38 @@ def get_image_mime(stream):
         return abort(500)
 
 
-def image_check(image, req):
+def image_check(image_url):
     """Uploaded file checks"""
-    content_length = int(req.headers.get("content-length", None))
-    content_type = req.headers.get("content-type")
-    mime = get_image_mime(image)  #get mime type from uploaded file
-    if mime != content_type:
-        abort(403, "Content missmatch")
-    if application.config["COOKIE_SIZE_LIMIT"] < content_length:
-        abort(403, "Image is too large")
-    return True
+    try:
+        headers = {"Range": "bytes=0-2048"}
+        req = requests.get(image_url, headers=headers, allow_redirects=True, timeout=5)
+        if req.status_code != 206:
+            abort(req.status_code)
+        content_length = int(req.headers.get("content-length", None))
+        content_type = req.headers.get("content-type")
+        image_head = BytesIO(req.content)
+        mime = get_image_mime(image_head)  #get mime type from uploaded file
+        if content_type != mime:
+            abort(403, "Content missmatch")
+        if content_length > application.config["COOKIE_SIZE_LIMIT"] :
+            abort(403, "Image is too large")
+        return True
+    except:
+        print("Error in image_check()")
+        return abort(500)
 
 
 def image_process(image_url, scale_percent):
     """image download by url and process"""
     try:
         image_url = image_url.decode().rstrip("\n")
-        req = requests.get(image_url, allow_redirects=True, timeout=5)
-        image = BytesIO(req.content)
-        if req.status_code == 200 and image_check(image, req):
-            # check result code and that header and content match
+        if image_check(image_url):
+            req = requests.get(image_url, allow_redirects=True, timeout=5)
+            image = BytesIO(req.content)
             req.raw.decode_content = True
             thumb = make_thumbnail(image, scale_percent)
             return image_to_object(thumb)
-        return abort(req.status_code)
+        return abort(500)
     except:
         print("Error in image_process()")
         return abort(500)
