@@ -1,7 +1,6 @@
-<p align="center"><a href='https://github.com/darzanebor/cookie'><img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/logo.png" title="COOKIE"></a></p>
 <p><img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint0.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint1.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint2.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint3.svg" title="pylint"></a>
 </p>
-
+<p align="center"><a href='https://github.com/darzanebor/cookie'><img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/logo.png" title="COOKIE"></a></p>
 1) Thumbnail by PUT request:<br/><br/>
   curl -XPUT -F 'file=@./img/cat.jpg' -F 'scale=10' http://127.0.0.1:5000 --output 1.jpeg<br/><br/>
 2) Thumbnail over GET request with image url:<br/>
