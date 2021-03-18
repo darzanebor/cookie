@@ -31,6 +31,8 @@ application.config["COOKIE_FIXED_SIZE"] = int(os.environ.get("COOKIE_FIXED_SIZE"
 application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_SCALE", "30"))
 # Image size limit in bytes
 application.config["COOKIE_IMAGE_MAX_SIZE"] = int(os.environ.get("COOKIE_IMAGE_MAX_SIZE", "31457280"))
+# Max content length flask param 1024Mb
+application.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
 
 
 def image_to_object(image):
