@@ -30,7 +30,7 @@ application.config["COOKIE_FIXED_SIZE"] = int(os.environ.get("COOKIE_FIXED_SIZE"
 # Scale percent
 application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_SCALE", "30"))
 # Image size limit in bytes
-application.config["COOKIE_SIZE_LIMIT"] = int(os.environ.get("COOKIE_SIZE_LIMIT", "31457280"))
+application.config["COOKIE_IMAGE_SIZE"] = int(os.environ.get("COOKIE_IMAGE_SIZE", "31457280"))
 
 
 def image_to_object(image):
@@ -69,7 +69,7 @@ def image_check(image_url):
         mime = get_image_mime(image_head)  #get mime type from uploaded file
         if content_type != mime:
             abort(403, "Content missmatch")
-        if content_length > application.config["COOKIE_SIZE_LIMIT"] :
+        if content_length > application.config["COOKIE_IMAGE_SIZE"] :
             abort(403, "Image is too large")
         return True
     except:
