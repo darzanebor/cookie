@@ -58,23 +58,28 @@ def get_image_mime(stream):
 
 def image_check(image_url):
     """Uploaded file checks"""
-    headers = {"Range": "bytes=0-2048"}
-    req = requests.get(image_url, headers=headers, allow_redirects=True, timeout=5)
-    if req.status_code != 206:
+    try:
+        headers = {"Range": "bytes=0-2048"}
+        req = requests.get(image_url, headers=headers, allow_redirects=True, timeout=5)
+        if req.status_code != 206:
             abort(req.status_code)
-    content_length = int(req.headers.get("content-length", None))
-    content_type = req.headers.get("content-type")
-    image_head = BytesIO(req.content)
-    mime = get_image_mime(image_head)  #get mime type from uploaded file
-    if content_type != mime:
-        abort(403, "Content missmatch")
-    if content_length > application.config["COOKIE_SIZE_LIMIT"] :
-        abort(403, "Image is too large")
-    return True
+        content_length = int(req.headers.get("content-length", None))
+        content_type = req.headers.get("content-type")
+        image_head = BytesIO(req.content)
+        mime = get_image_mime(image_head)  #get mime type from uploaded file
+        if content_type != mime:
+            abort(403, "Content missmatch")
+        if content_length > application.config["COOKIE_SIZE_LIMIT"] :
+            abort(403, "Image is too large")
+        return True
+    except:
+        print("Error in image_check()")
+        return abort(500)
+
 
 def image_process(image_url, scale_percent):
-#    """image download by url and process"""
-#    try:
+    """image download by url and process"""
+    try:
         image_url = image_url.decode().rstrip("\n")
         if image_check(image_url):
             req = requests.get(image_url, allow_redirects=True, timeout=5)
@@ -83,9 +88,9 @@ def image_process(image_url, scale_percent):
             thumb = make_thumbnail(image, scale_percent)
             return image_to_object(thumb)
         return abort(500)
-#    except:
-#        print("Error in image_process()")
-#        return abort(500)
+    except:
+        print("Error in image_process()")
+        return abort(500)
 
 
 def handle_scale(scale_percent):
@@ -123,8 +128,8 @@ def make_thumbnail(input_image, scale_size):
 
 @application.route("/", methods=["GET", "PUT"])
 def req_handler():
-#    """GET/PUT requests handler"""
-#    try:
+    """GET/PUT requests handler"""
+    try:
         if request.method == "GET":
             url = request.args.get("url")
             if url:
@@ -140,9 +145,9 @@ def req_handler():
                             image_to_object(
                                 make_thumbnail(file, handle_scale(scale_percent))), mimetype="*/*")
         return redirect("/index.html", code=302)
-#    except:
-#        print("Error in req_handler()")
-#        return abort(500)
+    except:
+        print("Error in req_handler()")
+        return abort(500)
 
 
 @application.errorhandler(405)
