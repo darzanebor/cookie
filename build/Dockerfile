@@ -8,7 +8,7 @@ RUN apk add --update --no-cache \
     libffi-dev gcc musl-dev libgcc \
     openssl-dev jpeg-dev zlib-dev \
     freetype-dev lcms2-dev openjpeg-dev \
-    tiff-dev tk-dev tcl-dev && \
+    tiff-dev tk-dev tcl-dev libmagic && \
     curl https://bootstrap.pypa.io/get-pip.py -o- | python3 - && \
     python3 -m pip install pip && \
     pip3 install -r /usr/src/app/requirements.txt && \
