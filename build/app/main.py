@@ -75,8 +75,7 @@ def image_check(image_url):
             abort(403, "Content missmatch")
         if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"] :
             abort(403, "Image is too large")
-        # To-Do add check by mime
-        # if mime in allow_mime_types:
+#        if mime in application.config["COOKIE_ALLOWED_MIME"] = {}:
         return True
     except:
         print("Error in image_check()")
