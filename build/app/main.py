@@ -83,7 +83,7 @@ def image_check(image_url):
         if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"]:
             abort(403, "Image is too large")
         if mime in application.config["COOKIE_ALLOWED_MIME"]:
-            print("mime allowed")
+            abort(403, "This image type is forbidden")
         return True
     except:
         print("Error in image_check()")
