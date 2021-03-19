@@ -34,8 +34,17 @@ application.config["COOKIE_IMAGE_MAX_SIZE"] = int(os.environ.get("COOKIE_IMAGE_M
 # Max content length flask param 1024Mb
 application.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
 # Allowed mime types
-application.config["COOKIE_ALLOWED_MIME"] = {}
-
+application.config["COOKIE_ALLOWED_MIME"] = os.environ.get("COOKIE_ALLOWED_MIME",[
+    "image/gif",
+    "image/jpeg",
+    "image/png",
+    "image/x-xbitmap",
+    "image/x-xpixmap",
+    "image/x-xwindowdump",
+    "image/bmp",
+    "image/tiff",
+    "image/webp",
+])
 
 def image_to_object(image):
     """convert image to Object"""
@@ -48,7 +57,6 @@ def image_to_object(image):
         print("Error in image_to_object()")
         return abort(500)
 
-
 def get_image_mime(stream):
     """Get Mime Type from stream"""
     try:
@@ -58,7 +66,6 @@ def get_image_mime(stream):
     except:
         print("Error in get_image_mime()")
         return abort(500)
-
 
 def image_check(image_url):
     """Uploaded file checks"""
@@ -70,12 +77,13 @@ def image_check(image_url):
         content_length = int(req.headers.get("content-length", None))
         content_type = req.headers.get("content-type")
         image_head = io.BytesIO(req.content)
-        mime = get_image_mime(image_head)  #get mime type from uploaded file
+        mime = get_image_mime(image_head)  # get mime type from uploaded file
         if content_type != mime:
             abort(403, "Content missmatch")
-        if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"] :
+        if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"]:
             abort(403, "Image is too large")
-#        if mime in application.config["COOKIE_ALLOWED_MIME"] = {}:
+        if mime in application.config["COOKIE_ALLOWED_MIME"]:
+            print("mime allowed")
         return True
     except:
         print("Error in image_check()")
@@ -94,7 +102,7 @@ def image_process(image_url, scale_percent):
             image = io.BytesIO(req.content)
             req.raw.decode_content = True
             thumb = make_thumbnail(image, scale_percent)
-            return [ image_to_object(thumb), md5hash(req.content)]
+            return [image_to_object(thumb), md5hash(req.content)]
         return abort(500)
     except:
         print("Error in image_process()")
@@ -115,7 +123,6 @@ def handle_scale(scale_percent):
         print("Error in handle_scale()")
         return abort(500)
 
-
 def make_thumbnail(input_image, scale_size):
     """make thumbnail image"""
     try:
@@ -132,7 +139,6 @@ def make_thumbnail(input_image, scale_size):
         print("Error in make_thumbnail()")
         return abort(500)
 
-
 @application.route("/", methods=["GET", "PUT"])
 def req_handler():
     """GET/PUT requests handler"""
@@ -144,7 +150,7 @@ def req_handler():
                 scale_percent = request.args.get("scale")
                 image_thumbnail, md5sum = image_process(url, handle_scale(scale_percent))
                 response = make_response(send_file(image_thumbnail, mimetype="*/*"))
-                response.headers['X-Orig-Hash'] = md5sum
+                response.headers["X-Orig-Hash"] = md5sum
                 return response
         if request.method == "PUT":
             if "file" in request.files:
@@ -152,7 +158,7 @@ def req_handler():
                 scale_percent = request.form.get("scale")
                 image_thumbnail = image_to_object(make_thumbnail(file, handle_scale(scale_percent)))
                 response = make_response(send_file(image_thumbnail, mimetype="*/*"))
-                response.headers['X-Orig-Hash'] = md5hash(file.read())
+                response.headers["X-Orig-Hash"] = md5hash(file.read())
                 return response
         return redirect("/index.html", code=302)
     except:
