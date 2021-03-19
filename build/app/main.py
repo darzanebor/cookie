@@ -11,6 +11,7 @@ import magic
 import requests
 import json_log_formatter  # Used in gunicorn_logging.conf
 from PIL import Image
+from hashlib import md5
 from flask import (
     Flask,
     request,
@@ -78,17 +79,21 @@ def image_check(image_url):
         print("Error in image_check()")
         return abort(500)
 
+def md5sum(content):
+    """image download by url and process"""
+    md5sum = md5(content)
+    return md5sum.hexdigest()
 
 def image_process(image_url, scale_percent):
     """image download by url and process"""
     try:
         image_url = image_url.decode().rstrip("\n")
         if image_check(image_url):
-            req = requests.get(image_url, allow_redirects=True, timeout=5)
+            req = requests.get(image_url, allow_redirects=True, timeout=5)            
             image = BytesIO(req.content)
             req.raw.decode_content = True
-            thumb = make_thumbnail(image, scale_percent)
-            return image_to_object(thumb)
+            thumb = make_thumbnail(image, scale_percent)            
+            return [ image_to_object(thumb), md5sum(req.content)]
         return abort(500)
     except:
         print("Error in image_process()")
@@ -137,50 +142,47 @@ def req_handler():
             if url:
                 url = base64.b64decode(url)
                 scale_percent = request.args.get("scale")
-                return send_file(
-                           image_process(url, handle_scale(scale_percent)), mimetype="*/*")
+                image_thumbnail, md5hash = image_process(url, handle_scale(scale_percent))
+                response = make_response(send_file(image_thumbnail, mimetype="*/*"))
+                response.headers['X-Orig-Hash'] = md5hash
+                return response
         if request.method == "PUT":
             if "file" in request.files:
                 file = request.files["file"]
                 scale_percent = request.form.get("scale")
-                return send_file(
-                            image_to_object(
-                                make_thumbnail(file, handle_scale(scale_percent))), mimetype="*/*")
+                image_thumbnail = image_to_object(make_thumbnail(file, handle_scale(scale_percent)))                
+                response = make_response(send_file(image_thumbnail, mimetype="*/*"))
+                response.headers['X-Orig-Hash'] = md5sum(file.read())
+                return response
         return redirect("/index.html", code=302)
     except:
         print("Error in req_handler()")
         return abort(500)
-
 
 @application.errorhandler(405)
 def method_forbidden(exception):
     """Method Not Allowed."""
     return jsonify(str(exception)), 405
 
-
 @application.errorhandler(404)
 def resource_not_found(exception):
     """Page not found."""
     return jsonify(str(exception)), 404
-
 
 @application.errorhandler(403)
 def resource_forbidden(exception):
     """Forbidden."""
     return jsonify(str(exception)), 403
 
-
 @application.errorhandler(500)
 def resource_error(exception):
     """Internal Error."""
     return jsonify(str(exception)), 500
 
-
 @application.route("/index.html")
 def default_index():
     """Index page"""
     return make_response(render_template("index.html"), 200)
-
 
 @application.route("/favicon.ico")
 def favicon():
@@ -190,7 +192,6 @@ def favicon():
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
-
 
 if __name__ == "__main__":
     application.run(threaded=True)

@@ -23,12 +23,12 @@
 </td>
 <td>
   
-| HTTP Headers (reverse proxy) ||
+| HTTP Headers ||
 | ------------- | ------------- |
 | X-FORWARDED-PROTOCOL | ssl |
 | X-FORWARDED-PROTO | https |
 | X-FORWARDED-SSL | on |
-
+| X-Orig-Hash (reply) | md5 sum |
 </td>
 </tr>
 </tbody>
