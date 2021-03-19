@@ -20,6 +20,7 @@
 | COOKIE_FIXED_SIZE (WIDTH)| 120 |
 | COOKIE_DEFAULT_SCALE | 30 |
 | COOKIE_IMAGE_MAX_SIZE | 31457280 (bytes) |
+| COOKIE_ALLOWED_MIME | list of allowed mime types |
 </td>
 <td>
   
