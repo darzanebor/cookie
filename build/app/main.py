@@ -3,12 +3,12 @@
 
 """COOKIE"""
 
-from io import BytesIO
 import io
 import os
 import base64
-import magic
+from hashlib import md5
 import requests
+import magic
 import json_log_formatter  # Used in gunicorn_logging.conf
 from PIL import Image
 from flask import (
@@ -33,7 +33,18 @@ application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_
 application.config["COOKIE_IMAGE_MAX_SIZE"] = int(os.environ.get("COOKIE_IMAGE_MAX_SIZE", "31457280"))
 # Max content length flask param 1024Mb
 application.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
-
+# Allowed mime types
+application.config["COOKIE_ALLOWED_MIME"] = os.environ.get("COOKIE_ALLOWED_MIME",[
+    "image/gif",
+    "image/jpeg",
+    "image/png",
+    "image/x-xbitmap",
+    "image/x-xpixmap",
+    "image/x-xwindowdump",
+    "image/bmp",
+    "image/tiff",
+    "image/webp",
+])
 
 def image_to_object(image):
     """convert image to Object"""
@@ -46,7 +57,6 @@ def image_to_object(image):
         print("Error in image_to_object()")
         return abort(500)
 
-
 def get_image_mime(stream):
     """Get Mime Type from stream"""
     try:
@@ -57,7 +67,6 @@ def get_image_mime(stream):
         print("Error in get_image_mime()")
         return abort(500)
 
-
 def image_check(image_url):
     """Uploaded file checks"""
     try:
@@ -67,17 +76,22 @@ def image_check(image_url):
             abort(req.status_code)
         content_length = int(req.headers.get("content-length", None))
         content_type = req.headers.get("content-type")
-        image_head = BytesIO(req.content)
-        mime = get_image_mime(image_head)  #get mime type from uploaded file
+        image_head = io.BytesIO(req.content)
+        mime = get_image_mime(image_head)  # get mime type from uploaded file
         if content_type != mime:
             abort(403, "Content missmatch")
-        if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"] :
+        if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"]:
             abort(403, "Image is too large")
+        if mime in application.config["COOKIE_ALLOWED_MIME"]:
+            abort(403, "This image type is forbidden")
         return True
     except:
         print("Error in image_check()")
         return abort(500)
 
+def md5hash(content):
+    """image download by url and process"""
+    return md5(content).hexdigest()
 
 def image_process(image_url, scale_percent):
     """image download by url and process"""
@@ -85,15 +99,14 @@ def image_process(image_url, scale_percent):
         image_url = image_url.decode().rstrip("\n")
         if image_check(image_url):
             req = requests.get(image_url, allow_redirects=True, timeout=5)
-            image = BytesIO(req.content)
+            image = io.BytesIO(req.content)
             req.raw.decode_content = True
             thumb = make_thumbnail(image, scale_percent)
-            return image_to_object(thumb)
+            return [image_to_object(thumb), md5hash(req.content)]
         return abort(500)
     except:
         print("Error in image_process()")
         return abort(500)
-
 
 def handle_scale(scale_percent):
     """handle scale percent"""
@@ -109,7 +122,6 @@ def handle_scale(scale_percent):
     except:
         print("Error in handle_scale()")
         return abort(500)
-
 
 def make_thumbnail(input_image, scale_size):
     """make thumbnail image"""
@@ -127,7 +139,6 @@ def make_thumbnail(input_image, scale_size):
         print("Error in make_thumbnail()")
         return abort(500)
 
-
 @application.route("/", methods=["GET", "PUT"])
 def req_handler():
     """GET/PUT requests handler"""
@@ -137,50 +148,47 @@ def req_handler():
             if url:
                 url = base64.b64decode(url)
                 scale_percent = request.args.get("scale")
-                return send_file(
-                           image_process(url, handle_scale(scale_percent)), mimetype="*/*")
+                image_thumbnail, md5sum = image_process(url, handle_scale(scale_percent))
+                response = make_response(send_file(image_thumbnail, mimetype="*/*"))
+                response.headers["X-Orig-Hash"] = md5sum
+                return response
         if request.method == "PUT":
             if "file" in request.files:
                 file = request.files["file"]
                 scale_percent = request.form.get("scale")
-                return send_file(
-                            image_to_object(
-                                make_thumbnail(file, handle_scale(scale_percent))), mimetype="*/*")
+                image_thumbnail = image_to_object(make_thumbnail(file, handle_scale(scale_percent)))
+                response = make_response(send_file(image_thumbnail, mimetype="*/*"))
+                response.headers["X-Orig-Hash"] = md5hash(file.read())
+                return response
         return redirect("/index.html", code=302)
     except:
         print("Error in req_handler()")
         return abort(500)
-
 
 @application.errorhandler(405)
 def method_forbidden(exception):
     """Method Not Allowed."""
     return jsonify(str(exception)), 405
 
-
 @application.errorhandler(404)
 def resource_not_found(exception):
     """Page not found."""
     return jsonify(str(exception)), 404
-
 
 @application.errorhandler(403)
 def resource_forbidden(exception):
     """Forbidden."""
     return jsonify(str(exception)), 403
 
-
 @application.errorhandler(500)
 def resource_error(exception):
     """Internal Error."""
     return jsonify(str(exception)), 500
 
-
 @application.route("/index.html")
 def default_index():
     """Index page"""
     return make_response(render_template("index.html"), 200)
-
 
 @application.route("/favicon.ico")
 def favicon():
@@ -190,7 +198,6 @@ def favicon():
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
-
 
 if __name__ == "__main__":
     application.run(threaded=True)
