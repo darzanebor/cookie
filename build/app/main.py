@@ -38,12 +38,12 @@ application.config["COOKIE_ALLOWED_MIME"] = os.environ.get("COOKIE_ALLOWED_MIME"
     "image/gif",
     "image/jpeg",
     "image/png",
-    "image/x-xbitmap",
-    "image/x-xpixmap",
-    "image/x-xwindowdump",
     "image/bmp",
     "image/tiff",
     "image/webp",
+    "image/x-xbitmap",
+    "image/x-xpixmap",
+    "image/x-xwindowdump",
 ])
 
 def image_to_object(image):
