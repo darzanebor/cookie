@@ -1,4 +1,4 @@
-<p><img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint0.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint1.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint2.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint3.svg" title="pylint"></a>
+<p><img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint0.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint1.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://git.muffs.ru/%{project_path}/badges/%{default_branch}/pipeline.svg" title="pylint"></a>&nbsp;&nbsp;<img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/pylint3.svg" title="pylint"></a>
 </p>
 <p align="center"><a href='https://github.com/darzanebor/cookie'><img src="https://raw.githubusercontent.com/darzanebor/cookie/master/img/logo.png" title="COOKIE"></a></p>
 1) Thumbnail by PUT request:<br/><br/>
