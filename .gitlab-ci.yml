@@ -1,0 +1,4 @@
+include:
+  - project: 'alphaceti/ops/ci-project'
+    ref: master
+    file: '/ci-process-python.yaml'
