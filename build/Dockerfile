@@ -1,4 +1,4 @@
-FROM alpine:3.12 as base
+FROM alpine:3.13 as base
 COPY app/requirements.txt /usr/src/app/
 RUN apk add --update --no-cache \
     python3 python3-dev \
