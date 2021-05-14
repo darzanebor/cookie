@@ -3,7 +3,6 @@
 
 """COOKIE"""
 
-from io import BytesIO
 import io
 import os
 import base64
@@ -26,14 +25,19 @@ from flask import (
 application = Flask(__name__, template_folder="templates")
 
 # Fixed image width to scale to
-application.config["COOKIE_FIXED_SIZE"] = int(os.environ.get("COOKIE_FIXED_SIZE", "120"))
+application.config["COOKIE_FIXED_SIZE"] = int(
+    os.environ.get("COOKIE_FIXED_SIZE", "120")
+)
 # Scale percent
-application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_SCALE", "30"))
+application.config["COOKIE_DEFAULT_SCALE"] = int(
+    os.environ.get("COOKIE_DEFAULT_SCALE", "30")
+)
 # Image size limit in bytes
-application.config["COOKIE_IMAGE_MAX_SIZE"] = int(os.environ.get("COOKIE_IMAGE_MAX_SIZE", "31457280"))
+application.config["COOKIE_IMAGE_MAX_SIZE"] = int(
+    os.environ.get("COOKIE_IMAGE_MAX_SIZE", "31457280")
+)
 # Max content length flask param 1024Mb
 application.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
-
 
 def image_to_object(image):
     """convert image to Object"""
@@ -67,7 +71,7 @@ def image_check(image_url):
             abort(req.status_code)
         content_length = int(req.headers.get("content-length", None))
         content_type = req.headers.get("content-type")
-        image_head = BytesIO(req.content)
+        image_head = io.BytesIO(req.content)
         mime = get_image_mime(image_head)  #get mime type from uploaded file
         if content_type != mime:
             abort(403, "Content missmatch")
@@ -85,7 +89,7 @@ def image_process(image_url, scale_percent):
         image_url = image_url.decode().rstrip("\n")
         if image_check(image_url):
             req = requests.get(image_url, allow_redirects=True, timeout=5)
-            image = BytesIO(req.content)
+            image = io.BytesIO(req.content)
             req.raw.decode_content = True
             thumb = make_thumbnail(image, scale_percent)
             return image_to_object(thumb)
