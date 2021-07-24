@@ -4,3 +4,4 @@ requests
 pillow
 json_log_formatter
 python-magic
+Flask-WTF

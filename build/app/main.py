@@ -5,6 +5,7 @@
 
 import io
 import os
+import time
 import base64
 import magic
 import requests
@@ -21,8 +22,14 @@ from flask import (
     redirect,
     send_from_directory,
 )
+from prometheus_client import multiprocess, generate_latest, Summary
+from flask_wtf.csrf import CSRFProtect
 
 application = Flask(__name__, template_folder="templates")
+
+csrf = CSRFProtect()
+
+REQUEST_TIME = Summary("request_processing_seconds", "Time spent processing request")
 
 # Fixed image width to scale to
 application.config["COOKIE_FIXED_SIZE"] = int(
@@ -38,6 +45,7 @@ application.config["COOKIE_IMAGE_MAX_SIZE"] = int(
 )
 # Max content length flask param 1024Mb
 application.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
+
 
 def image_to_object(image):
     """convert image to Object"""
@@ -72,10 +80,10 @@ def image_check(image_url):
         content_length = int(req.headers.get("content-length", None))
         content_type = req.headers.get("content-type")
         image_head = io.BytesIO(req.content)
-        mime = get_image_mime(image_head)  #get mime type from uploaded file
+        mime = get_image_mime(image_head)  # get mime type from uploaded file
         if content_type != mime:
             abort(403, "Content missmatch")
-        if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"] :
+        if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"]:
             abort(403, "Image is too large")
         return True
     except:
@@ -132,8 +140,15 @@ def make_thumbnail(input_image, scale_size):
         return abort(500)
 
 
-@application.route("/", methods=["GET", "PUT"])
-def req_handler():
+@application.route("/metrics", methods=["GET"])
+def metrics():
+    return generate_latest()
+
+@application.route("/<path:path>", methods=["GET", "PUT"])
+@application.route("/<path:path>")
+@application.route("/")
+@REQUEST_TIME.time()
+def req_handler(path):
     """GET/PUT requests handler"""
     try:
         if request.method == "GET":
@@ -142,14 +157,15 @@ def req_handler():
                 url = base64.b64decode(url)
                 scale_percent = request.args.get("scale")
                 return send_file(
-                           image_process(url, handle_scale(scale_percent)), mimetype="*/*")
-        if request.method == "PUT":
-            if "file" in request.files:
-                file = request.files["file"]
-                scale_percent = request.form.get("scale")
-                return send_file(
-                            image_to_object(
-                                make_thumbnail(file, handle_scale(scale_percent))), mimetype="*/*")
+                    image_process(url, handle_scale(scale_percent)), mimetype="*/*"
+                )
+        if request.method == "PUT" and "file" in request.files:
+            file = request.files["file"]
+            scale_percent = request.form.get("scale")
+            return send_file(
+                image_to_object(make_thumbnail(file, handle_scale(scale_percent))),
+                mimetype="*/*",
+            )
         return redirect("/index.html", code=302)
     except:
         print("Error in req_handler()")
@@ -198,3 +214,4 @@ def favicon():
 
 if __name__ == "__main__":
     application.run(threaded=True)
+    csrf.init_app(application)
