@@ -22,7 +22,7 @@ from flask import (
     redirect,
     send_from_directory,
 )
-from prometheus_client import multiprocess, generate_latest, Summary
+from prometheus_client import multiprocess, generate_latest, Summary, CollectorRegistry
 from flask_wtf.csrf import CSRFProtect
 
 application = Flask(__name__, template_folder="templates")
@@ -31,20 +31,10 @@ csrf = CSRFProtect()
 
 REQUEST_TIME = Summary("request_processing_seconds", "Time spent processing request")
 
-# Fixed image width to scale to
-application.config["COOKIE_FIXED_SIZE"] = int(
-    os.environ.get("COOKIE_FIXED_SIZE", "120")
-)
-# Scale percent
-application.config["COOKIE_DEFAULT_SCALE"] = int(
-    os.environ.get("COOKIE_DEFAULT_SCALE", "30")
-)
-# Image size limit in bytes
-application.config["COOKIE_IMAGE_MAX_SIZE"] = int(
-    os.environ.get("COOKIE_IMAGE_MAX_SIZE", "31457280")
-)
-# Max content length flask param 1024Mb
-application.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024
+application.config["COOKIE_FIXED_SIZE"] = int(os.environ.get("COOKIE_FIXED_SIZE", "120")) # Fixed image width to scale to
+application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_SCALE", "30")) # Scale percent
+application.config["COOKIE_IMAGE_MAX_SIZE"] = int(os.environ.get("COOKIE_IMAGE_MAX_SIZE", "31457280")) # Image size limit in bytes
+application.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024 # Max content length flask param 1024Mb
 
 
 def image_to_object(image):
@@ -54,8 +44,8 @@ def image_to_object(image):
         image.save(file_object, image.format)
         file_object.seek(0)
         return file_object
-    except:
-        print("Error in image_to_object()")
+    except Exception as e:
+        print("Error in image_to_object()"+ str(e))
         return abort(500)
 
 
@@ -65,8 +55,8 @@ def get_image_mime(stream):
         mime = magic.from_buffer(stream.read(2048), mime=True)
         stream.seek(0)
         return mime
-    except:
-        print("Error in get_image_mime()")
+    except Exception as e:
+        print("Error in get_image_mime()"+ str(e))
         return abort(500)
 
 
@@ -86,8 +76,8 @@ def image_check(image_url):
         if content_length > application.config["COOKIE_IMAGE_MAX_SIZE"]:
             abort(403, "Image is too large")
         return True
-    except:
-        print("Error in image_check()")
+    except Exception as e:
+        print("Error in image_check()"+ str(e))
         return abort(500)
 
 
@@ -102,8 +92,8 @@ def image_process(image_url, scale_percent):
             thumb = make_thumbnail(image, scale_percent)
             return image_to_object(thumb)
         return abort(500)
-    except:
-        print("Error in image_process()")
+    except Exception as e:
+        print("Error in image_process()"+ str(e))
         return abort(500)
 
 
@@ -118,8 +108,8 @@ def handle_scale(scale_percent):
                 return scale_percent
             return application.config["COOKIE_FIXED_SIZE"]
         return application.config["COOKIE_DEFAULT_SCALE"]
-    except:
-        print("Error in handle_scale()")
+    except Exception as e:
+        print("Error in handle_scale()"+ str(e))
         return abort(500)
 
 
@@ -135,20 +125,24 @@ def make_thumbnail(input_image, scale_size):
         thumbsize = (scale_size, (height / (width / scale_size)))
         image.thumbnail(thumbsize, Image.ANTIALIAS)
         return image
-    except:
-        print("Error in make_thumbnail()")
+    except Exception as e:
+        print("Error in make_thumbnail()"+ str(e))
         return abort(500)
 
+def child_exit(server, worker):
+    """ multiprocess function for prometheus to track gunicorn """
+    multiprocess.mark_process_dead(worker.pid)
 
 @application.route("/metrics", methods=["GET"])
-def metrics():
-    return generate_latest()
+def metrics():    
+    """  metrics route """
+    registry = CollectorRegistry()
+    multiprocess.MultiProcessCollector(registry)
+    return generate_latest(registry)
 
-@application.route("/<path:path>", methods=["GET", "PUT"])
-@application.route("/<path:path>")
-@application.route("/")
 @REQUEST_TIME.time()
-def req_handler(path):
+@application.route("/", methods=["GET", "PUT"])
+def req_handler():
     """GET/PUT requests handler"""
     try:
         if request.method == "GET":
@@ -167,8 +161,8 @@ def req_handler(path):
                 mimetype="*/*",
             )
         return redirect("/index.html", code=302)
-    except:
-        print("Error in req_handler()")
+    except Exception as e:
+        print("Error in req_handler():"+ str(e))
         return abort(500)
 
 
