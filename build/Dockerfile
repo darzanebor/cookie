@@ -1,4 +1,4 @@
-FROM alphaceti/default-python:latest as base
+FROM alphaceti/default-python:0.1.3 as base
 ADD app /usr/src/app
 RUN addgroup -S cookie && \
     adduser -S cookie -G cookie && \
