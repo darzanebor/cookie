@@ -1,4 +1,6 @@
 FROM alphaceti/default-python:0.1.3 as base
+ENV PROMETHEUS_MULTIPROC_DIR="/usr/src/app/prometheus" \
+    PATH="${PATH}:/home/cookie/.local/bin"
 ADD app /usr/src/app
 RUN addgroup -S cookie && \
     adduser -S cookie -G cookie && \
@@ -19,7 +21,7 @@ RUN addgroup -S cookie && \
     musl-dev \
     tcl-dev \
     tk-dev \
-    openssl \
+    openssl \    
     zlib \
     curl \
     g++ \
@@ -28,5 +30,5 @@ RUN addgroup -S cookie && \
 EXPOSE 5000/tcp
 USER cookie
 WORKDIR /usr/src/app
-RUN pip3 install -r ./requirements.txt
+RUN pip3 install --no-cache-dir -r ./requirements.txt
 ENTRYPOINT [ "./entry.sh" ]
