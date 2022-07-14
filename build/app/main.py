@@ -29,7 +29,7 @@ application = Flask(__name__, template_folder="templates")
 
 csrf = CSRFProtect()
 
-REQUEST_TIME = Summary("request_processing_seconds", "Time spent processing request")
+REQUEST_TIME = Summary("svc_request_processing_time", "Time spent processing request")
 
 application.config["COOKIE_FIXED_SIZE"] = int(os.environ.get("COOKIE_FIXED_SIZE", "120")) # Fixed image width to scale to
 application.config["COOKIE_DEFAULT_SCALE"] = int(os.environ.get("COOKIE_DEFAULT_SCALE", "30")) # Scale percent
