@@ -1,4 +1,4 @@
-FROM alphaceti/default-python:0.1.5 as base
+FROM alphaceti/default-python:0.1.8 as base
 ENV PROMETHEUS_MULTIPROC_DIR="/usr/src/app/prometheus" \
     PATH="${PATH}:/home/cookie/.local/bin"
 ADD app /usr/src/app
